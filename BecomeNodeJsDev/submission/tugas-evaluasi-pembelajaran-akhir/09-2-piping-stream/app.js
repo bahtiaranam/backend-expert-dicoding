@@ -11,7 +11,17 @@
  *   melihat implementasi dari fungsi `createReadable` dan `createWritable`.
  */
 
+const { pipeline } = require('stream');
 const { createReadable, createWritable } = require('./utils');
 
 const alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'];
 
+const readable = createReadable(alphabet);
+const writable = createWritable();
+pipeline(readable, writable, (err) => {
+    if (err) {
+        console.error('Pipeline failed.', err);
+    } 
+
+    console.log('Pipeline succeeded.');
+});
