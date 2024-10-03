@@ -8,7 +8,7 @@ const ClientError = require('./exceptions/ClientError');
 const InvariantError = require('./exceptions/InvariantError');
 const NotFoundError = require('./exceptions/NotFoundError');
 const ServerError = require('./exceptions/ServerError');
-
+ 
 const init = async () => {
   const musicsService = new MusicsService();
   const server = Hapi.server({
