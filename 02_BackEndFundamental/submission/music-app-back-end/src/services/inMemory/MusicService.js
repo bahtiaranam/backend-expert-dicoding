@@ -72,7 +72,7 @@ class MusicsService {
     duration,
   }) {
     const id = `song-${nanoid(16)}`;
-    const albumId = `album-${nanoid(16)}`;
+    const album_id = `album-${nanoid(16)}`;
 
     const newSong = {
       id,
@@ -81,7 +81,7 @@ class MusicsService {
       performer,
       genre,
       duration,
-      albumId,
+      album_id,
     };
 
     this._songs.push(newSong);

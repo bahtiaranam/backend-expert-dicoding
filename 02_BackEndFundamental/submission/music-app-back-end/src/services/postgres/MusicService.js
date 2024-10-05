@@ -70,19 +70,26 @@ class MusicService {
     title, year, genre, performer, duration,
   }) {
     const id = `song-${nanoid(16)}`;
-    const albumId = `album-${nanoid(16)}`;
 
-    const query = {
-      text: 'INSERT INTO songs VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING id',
-      values: [id, title, year, genre, performer, duration, albumId],
+    const queryAlbums = {
+      text: 'SELECT * FROM albums',
     };
+    const resultAlbums = await this._pool.query(queryAlbums);
+    const album_id = resultAlbums?.rows[0]?.id;
+    let result;
 
-    const result = await this._pool.query(query);
+    if (album_id) {
+      const query = {
+        text: 'INSERT INTO songs VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING id',
+        values: [id, title, year, genre, performer, duration, album_id],
+      };
 
-    if (!result.rows[0].id) {
-      throw new InvariantError('Song gagal ditambahkan');
+      result = await this._pool.query(query);
+
+      if (!result.rows[0].id) {
+        throw new InvariantError('Song gagal ditambahkan');
+      }
     }
-
     return result.rows[0].id;
   }
 
