@@ -15,8 +15,10 @@ const MathBasic = {
     subtract: () => {
    
     },
-    multiply: () => {
-   
+    multiply: (...args) => {
+        const [a, b] = args;
+
+        return a * b;
     },
     divide: () => {
    
