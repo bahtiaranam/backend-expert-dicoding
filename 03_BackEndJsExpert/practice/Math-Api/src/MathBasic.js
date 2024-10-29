@@ -12,16 +12,19 @@ const MathBasic = {
 
         return a + b;
       },
-    subtract: () => {
-   
+    subtract: (...args) => {
+        const [a, b] = args;
+        return a - b;
     },
     multiply: (...args) => {
         const [a, b] = args;
 
         return a * b;
     },
-    divide: () => {
-   
+    divide: (...args) => {
+        const [a, b] = args;
+
+        return a / b;
     },
   };
    
