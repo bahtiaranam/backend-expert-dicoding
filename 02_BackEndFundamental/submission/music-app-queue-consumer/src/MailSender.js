@@ -3,11 +3,11 @@ const nodemailer = require('nodemailer');
 class MailSender {
   constructor() {
     this._transporter = nodemailer.createTransport({
-      host: 'sandbox.smtp.mailtrap.io',
-      port: 2525,
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
       auth: {
-        user: '1d1d1127196852',
-        pass: '86a3ffbdf41ebf',
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASSWORD,
       },
     });
   }
