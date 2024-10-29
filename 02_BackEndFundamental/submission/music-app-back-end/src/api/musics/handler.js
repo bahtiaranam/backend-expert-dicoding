@@ -59,7 +59,7 @@ class MusicsHandler {
         cover.on('end', () => resolve(filename));
       });
 
-      await this._service.addCoverAlbum({ id, coverUrl: filename });
+      await this._service.addCoverAlbum({ id, coverUrl: `http://${process.env.HOST}:${process.env.PORT}/albums/covers/${filename}` });
 
       const response = h.response({
         status: 'success',

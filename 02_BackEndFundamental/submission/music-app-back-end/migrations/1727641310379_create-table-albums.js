@@ -22,6 +22,15 @@ exports.up = (pgm) => {
       type: 'INT',
       notNull: true,
     },
+    likes: {
+      type: 'INT',
+      default: 0,
+    },
+    coverUrl: {
+      type: 'TEXT',
+      notNull: false,
+      default: null,
+    },
   });
 };
 
