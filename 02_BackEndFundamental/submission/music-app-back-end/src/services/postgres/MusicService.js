@@ -5,8 +5,31 @@ const NotFoundError = require('../../exceptions/NotFoundError');
 const { mapDBToModelAlbums, mapDBToModelAllSongs, mapDBToModelSongs } = require('../../utils');
 
 class MusicService {
-  constructor() {
+  constructor(cacheService) {
     this._pool = new Pool();
+    this._cacheService = cacheService;
+  }
+
+  async addCoverAlbum({ id, coverUrl }) {
+    // Check if the album exists
+    const queryCheck = {
+      text: 'SELECT * FROM albums WHERE id = $1',
+      values: [id],
+    };
+    const resultCheck = await this._pool.query(queryCheck);
+
+    if (!resultCheck.rows.length) {
+      throw new NotFoundError('Album tidak ditemukan');
+    }
+
+    // Update the coverUrl for the album
+    const queryUpdate = {
+      text: 'UPDATE albums SET "coverUrl" = $2 WHERE id = $1 RETURNING *',
+      values: [id, coverUrl],
+    };
+    const resultUpdate = await this._pool.query(queryUpdate);
+
+    return resultUpdate.rows[0];
   }
 
   async addAlbum({ name, year }) {
@@ -66,6 +89,94 @@ class MusicService {
     }
   }
 
+  async likesAlbumById({ albumId, userId }) {
+    const id = `likes-${nanoid(16)}`;
+    const queryAlbum = {
+      text: 'SELECT * FROM albums WHERE id = $1',
+      values: [albumId],
+    };
+    const resultAlbum = await this._pool.query(queryAlbum);
+    if (!resultAlbum.rows.length) {
+      throw new NotFoundError('Album tidak ditemukan');
+    }
+
+    const queryIsLikes = {
+      text: 'SELECT * FROM list_likes WHERE album_id = $1 AND user_id = $2',
+      values: [albumId, userId],
+    };
+
+    const resultIsLikes = await this._pool.query(queryIsLikes);
+    if (resultIsLikes.rows.length) {
+      throw new InvariantError('Album sudah dilike');
+    }
+
+    const queryIncreas = {
+      text: 'UPDATE albums SET "likes" = "likes" + 1 WHERE id = $1 RETURNING *',
+      values: [albumId],
+    };
+
+    const queryAddListLikes = {
+      text: 'INSERT INTO list_likes (id, album_id, user_id) VALUES($1, $2, $3) RETURNING id',
+      values: [id, albumId, userId],
+    };
+
+    const counterLikes = await this._pool.query(queryIncreas);
+    await this._pool.query(queryAddListLikes);
+
+    await this._cacheService.delete(`likes:${albumId}`);
+
+    return counterLikes.rows[0];
+  }
+
+  async getLikesAlbumById({ albumId }) {
+    try {
+      const result = await this._cacheService.get(`likes:${albumId}`);
+      console.log('results getCache ', result);
+
+      const response = {
+        data: JSON.parse(result),
+        isCache: true,
+      };
+      return response;
+    } catch (error) {
+      console.log('albumId ', albumId);
+
+      const query = {
+        text: 'SELECT likes FROM albums WHERE id = $1',
+        values: [albumId],
+      };
+      const result = await this._pool.query(query);
+      console.log('result ', result);
+
+      // catatan akan disimpan pada cache sebelum fungsi getNotes dikembalikan
+      await this._cacheService.set(`likes:${albumId}`, JSON.stringify(result.rows[0]));
+
+      const response = {
+        data: result.rows[0],
+        isCache: false,
+      };
+      return response;
+    }
+  }
+
+  async deleteAlbumsLikesById({ albumId }) {
+    const queryDecreas = {
+      text: 'UPDATE albums SET "likes" = "likes" - 1 WHERE id = $1 RETURNING *',
+      values: [albumId],
+    };
+    const queryDeleteListLikes = {
+      text: 'DELETE FROM list_likes WHERE album_id = $1 RETURNING id',
+      values: [albumId],
+    };
+    const result = await this._pool.query(queryDecreas);
+    await this._pool.query(queryDeleteListLikes);
+
+    await this._cacheService.delete(`likes:${albumId}`);
+
+    return result.rows[0];
+  }
+
+  // Songs
   async addSong({
     title, year, genre, performer, duration,
   }) {

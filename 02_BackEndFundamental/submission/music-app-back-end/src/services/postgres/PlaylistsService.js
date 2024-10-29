@@ -1,5 +1,8 @@
+/* eslint-disable max-len */
+/* eslint-disable import/no-extraneous-dependencies */
 const { Pool } = require('pg');
 const { nanoid } = require('nanoid');
+// const nodemailer = require('nodemailer');
 const InvariantError = require('../../exceptions/InvariantError');
 const NotFoundError = require('../../exceptions/NotFoundError');
 const { mapDBToModelAllPlaylists } = require('../../utils');
@@ -27,20 +30,25 @@ class PlaylistService {
   }
 
   async addPlaylist({ name, owner }) {
-    const id = `playlist-${nanoid(16)}`;
+    try {
+      const id = `playlist-${nanoid(16)}`;
 
-    const query = {
-      text: 'INSERT INTO playlists VALUES($1, $2, $3) RETURNING id',
-      values: [id, name, owner],
-    };
+      const query = {
+        text: 'INSERT INTO playlists VALUES($1, $2, $3) RETURNING id',
+        values: [id, name, owner],
+      };
 
-    const result = await this._pool.query(query);
+      const result = await this._pool.query(query);
 
-    if (!result.rows[0].id) {
+      if (!result.rows[0].id) {
+        throw new InvariantError('Playlist gagal ditambahkan');
+      }
+
+      return result.rows[0].id;
+    } catch (error) {
+      console.log('error add ', error);
       throw new InvariantError('Playlist gagal ditambahkan');
     }
-
-    return result.rows[0].id;
   }
 
   async addSongToPlaylist({ playlistId, songId, userId }) {

@@ -30,8 +30,17 @@ const PlaylistsValidator = require('./validator/playlists');
 const AuthorizationError = require('./exceptions/AuthorizationError');
 const AuthenticationError = require('./exceptions/AuthenticationError');
 
+// Exports
+const _exports = require('./api/exports');
+const RabbitPlyalistService = require('./services/rabbitmq/PlaylistService');
+const ExportsValidator = require('./validator/exports');
+
+// cache
+const CacheService = require('./services/redis/CacheService');
+
 const init = async () => {
-  const musicsService = new MusicsService();
+  const cacheService = new CacheService();
+  const musicsService = new MusicsService(cacheService);
   const usersService = new UsersService();
   const authenticationsService = new AuthenticationsService();
   const playlistsService = new PlaylistsService();
@@ -98,6 +107,14 @@ const init = async () => {
       options: {
         service: playlistsService,
         validator: PlaylistsValidator,
+      },
+    },
+    {
+      plugin: _exports,
+      options: {
+        service: playlistsService,
+        validator: ExportsValidator,
+        rabbitmq: RabbitPlyalistService,
       },
     },
   ]);

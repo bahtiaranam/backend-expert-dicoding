@@ -5,6 +5,15 @@ const AlbumPayloadSchema = Joi.object({
   year: Joi.number().required(),
 });
 
+const CoverAlbumPayloadSchema = Joi.object({
+  cover: Joi.any().custom((value, helpers) => {
+    if (!value || !value.mimetype.startsWith('image/')) {
+      return helpers.message('Invalid file type. Only image files are allowed.');
+    }
+    return value;
+  }).required(),
+});
+
 const SongPayloadSchema = Joi.object({
   title: Joi.string(),
   year: Joi.number().required(),
@@ -14,4 +23,4 @@ const SongPayloadSchema = Joi.object({
   albumId: Joi.string(),
 });
 
-module.exports = { AlbumPayloadSchema, SongPayloadSchema };
+module.exports = { AlbumPayloadSchema, CoverAlbumPayloadSchema, SongPayloadSchema };

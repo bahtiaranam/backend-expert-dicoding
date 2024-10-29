@@ -27,6 +27,19 @@ const MusicsValidator = {
       throw new ServerError();
     }
   },
+
+  validateCoverAlbumPayload: (payload) => {
+    const validationResult = AlbumPayloadSchema.validate(payload);
+
+    if (validationResult.error) {
+      const { message, details } = validationResult.error;
+      if (details[0].type.includes('required') || details[0].type.includes('base')) {
+        throw new ClientError(message);
+      }
+
+      throw new ServerError();
+    }
+  },
 };
 
 module.exports = MusicsValidator;
