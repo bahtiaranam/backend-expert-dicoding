@@ -3,11 +3,7 @@ class ThreadRepository {
     throw new Error("THREAD_REPOSITORY.METHOD_NOT_IMPLEMENTED");
   }
 
-  async addThreadComment(threadComment) {
-    throw new Error("THREAD_REPOSITORY.METHOD_NOT_IMPLEMENTED");
-  }
-
-  async getThreadDetail(threadCommentId) {
+  async getThreadDetail(id) {
     throw new Error("THREAD_REPOSITORY.METHOD_NOT_IMPLEMENTED");
   }
 }

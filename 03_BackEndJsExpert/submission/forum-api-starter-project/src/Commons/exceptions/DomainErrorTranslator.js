@@ -45,6 +45,12 @@ DomainErrorTranslator._directories = {
   "POSTING_THREAD_COMMENT.NOT_MEET_DATA_TYPE_SPECIFICATION": new InvariantError(
     "comment thread harus string"
   ),
+  "THREAD_REPOSITORY.METHOD_NOT_IMPLEMENTED": new InvariantError(
+    "thread repository belum implementasi"
+  ),
+  "COMMENT_REPOSITORY.METHOD_NOT_IMPLEMENTED": new InvariantError(
+    "comment repository belum implementasi"
+  ),
 };
 
 module.exports = DomainErrorTranslator;

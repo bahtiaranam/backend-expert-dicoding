@@ -11,33 +11,8 @@ const ThreadsTableTestHelper = {
     await pool.query(query);
   },
 
-  async verifyThreadCommentById(id, table) {
-    const query = {
-      text: `SELECT * FROM ${table} WHERE id = $1`,
-      values: [id],
-    };
-
-    const result = await pool.query(query);
-    return result.rows;
-  },
-
-  async addThreadComment({
-    id,
-    threadId: thread_id,
-    username,
-    content,
-    owner,
-  }) {
-    const query = {
-      text: "INSERT INTO comments VALUES($1, $2, $3, $4, $5) RETURNING id, content, owner",
-      values: [id, thread_id, username, content, owner],
-    };
-
-    await pool.query(query);
-  },
-
-  async getThreadDetail(threadComment) {
-    const { threadId: thread_id } = threadComment;
+  async getThreadDetail(payload) {
+    const { threadId: thread_id } = payload;
 
     const query = {
       text: `
@@ -57,27 +32,6 @@ const ThreadsTableTestHelper = {
         WHERE threads.id = $1
       `,
       values: [thread_id],
-    };
-
-    return await pool.query(query);
-  },
-
-  async deleteThreadCommentById({ threadId, commentId, userId }) {
-    const verifyOwner = {
-      text: "SELECT owner FROM comments WHERE id = $1",
-      values: [commentId],
-    };
-
-    const resultOwner = await pool.query(verifyOwner);
-    if (resultOwner.rows[0].owner !== userId) {
-      throw new AuthorizationError(
-        "Anda tidak memiliki hak akses untuk menghapus komentar ini"
-      );
-    }
-
-    const query = {
-      text: "UPDATE comments SET is_deleted = true WHERE id = $1 AND thread_id = $2",
-      values: [commentId, threadId],
     };
 
     return await pool.query(query);

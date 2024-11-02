@@ -1,5 +1,3 @@
-const AuthorizationError = require("../../Commons/exceptions/AuthorizationError");
-const NotFoundError = require("../../Commons/exceptions/NotFoundError");
 const ThreadRepository = require("../../Domains/threads/ThreadRepository");
 
 class ThreadRepositoryPostgres extends ThreadRepository {
@@ -9,8 +7,8 @@ class ThreadRepositoryPostgres extends ThreadRepository {
     this._idGenerator = idGenerator;
   }
 
-  async addThread(postingThread) {
-    const { title, body, username, owner } = postingThread;
+  async addThread(thread) {
+    const { title, body, username, owner } = thread;
     const id = `thread-${this._idGenerator()}`;
 
     const query = {
@@ -23,42 +21,8 @@ class ThreadRepositoryPostgres extends ThreadRepository {
     return result.rows[0];
   }
 
-  async verifyThreadCommentById(id, table) {
-    const query = {
-      text: `SELECT * FROM ${table} WHERE id = $1`,
-      values: [id],
-    };
-
-    const result = await this._pool.query(query);
-
-    if (!result.rowCount) {
-      throw new NotFoundError(`data tidak ditemukan`);
-    }
-
-    return true;
-  }
-
-  async addThreadComment(postingThreadComment) {
-    const {
-      threadId: thread_id,
-      content,
-      username,
-      owner,
-    } = postingThreadComment;
-    const id = `comment-${this._idGenerator()}`;
-
-    const query = {
-      text: "INSERT INTO comments VALUES($1, $2, $3, $4, $5) RETURNING id, content, owner",
-      values: [id, thread_id, username, content, owner],
-    };
-
-    const result = await this._pool.query(query);
-
-    return result.rows[0];
-  }
-
-  async getThreadDetail(threadComment) {
-    const { threadId: thread_id } = threadComment;
+  async getThreadDetail(payload) {
+    const { threadId: thread_id } = payload;
 
     const query = {
       text: `
@@ -94,38 +58,11 @@ class ThreadRepositoryPostgres extends ThreadRepository {
           id: row.comment_id,
           username: row.comment_username,
           date: row.comment_date,
-          content: !row.comment_is_deleted
-            ? row.comment_content
-            : "**komentar telah dihapus**",
+          content: row.comment_content,
         })),
     };
 
     return thread;
-  }
-
-  async deleteThreadCommentById(deleteThreadComment) {
-    const { threadId, commentId, userId } = deleteThreadComment;
-
-    const verifyOwner = {
-      text: "SELECT owner FROM comments WHERE id = $1",
-      values: [commentId],
-    };
-
-    const resultOwner = await this._pool.query(verifyOwner);
-    if (resultOwner.rows[0].owner !== userId) {
-      throw new AuthorizationError(
-        "Anda tidak memiliki hak akses untuk menghapus komentar ini"
-      );
-    }
-
-    const query = {
-      text: "UPDATE comments SET is_deleted = true WHERE id = $1 AND thread_id = $2",
-      values: [commentId, threadId],
-    };
-
-    const result = await this._pool.query(query);
-
-    return result.rows[0];
   }
 }
 

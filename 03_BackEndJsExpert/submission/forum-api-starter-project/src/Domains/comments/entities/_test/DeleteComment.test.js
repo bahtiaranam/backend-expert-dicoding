@@ -1,6 +1,6 @@
-const DeleteThreadComment = require("../DeleteThreadComment");
+const DeleteComment = require("../DeleteComment");
 
-describe("a DeleteThreadComment entities", () => {
+describe("a DeleteComment entities", () => {
   it("should throw error when payload did not contain needed property", () => {
     // Arrange
     const payload = {
@@ -8,8 +8,8 @@ describe("a DeleteThreadComment entities", () => {
     };
 
     // Action and Assert
-    expect(() => new DeleteThreadComment(payload)).toThrowError(
-      "POSTING_THREAD.NOT_CONTAIN_NEEDED_PROPERTY"
+    expect(() => new DeleteComment(payload)).toThrowError(
+      "POSTING_THREAD_COMMENT.NOT_CONTAIN_NEEDED_PROPERTY"
     );
   });
 
@@ -22,8 +22,8 @@ describe("a DeleteThreadComment entities", () => {
     };
 
     // Action and Assert
-    expect(() => new DeleteThreadComment(payload)).toThrowError(
-      "POSTING_THREAD.NOT_MEET_DATA_TYPE_SPECIFICATION"
+    expect(() => new DeleteComment(payload)).toThrowError(
+      "POSTING_THREAD_COMMENT.NOT_MEET_DATA_TYPE_SPECIFICATION"
     );
   });
 
@@ -36,11 +36,11 @@ describe("a DeleteThreadComment entities", () => {
     };
 
     // Action
-    const deleteThreadComment = new DeleteThreadComment(payload);
+    const deleteComment = new DeleteComment(payload);
 
     // Assert
-    expect(deleteThreadComment.threadId).toEqual(payload.threadId);
-    expect(deleteThreadComment.commentId).toEqual(payload.commentId);
-    expect(deleteThreadComment.userId).toEqual(payload.userId);
+    expect(deleteComment.threadId).toEqual(payload.threadId);
+    expect(deleteComment.commentId).toEqual(payload.commentId);
+    expect(deleteComment.userId).toEqual(payload.userId);
   });
 });

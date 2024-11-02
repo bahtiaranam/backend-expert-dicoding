@@ -11,13 +11,16 @@ const pool = require("./database/postgres/pool");
 // service (repository, helper, manager, etc)
 const UserRepository = require("../Domains/users/UserRepository");
 const ThreadRepository = require("../Domains/threads/ThreadRepository");
+const CommentRepository = require("../Domains/comments/CommentRepository");
 const PasswordHash = require("../Applications/security/PasswordHash");
 const UserRepositoryPostgres = require("./repository/UserRepositoryPostgres");
 const ThreadRepositoryPostgres = require("./repository/ThreadRepositoryPostgres");
+const CommentRepositoryPostgres = require("./repository/CommentRepositoryPostgres");
 const BcryptPasswordHash = require("./security/BcryptPasswordHash");
 
 // use case
 const ThreadUseCase = require("../Applications/use_case/ThreadUseCase");
+const CommentUseCase = require("../Applications/use_case/CommentUseCase");
 const AddUserUseCase = require("../Applications/use_case/AddUserUseCase");
 const AuthenticationTokenManager = require("../Applications/security/AuthenticationTokenManager");
 const JwtTokenManager = require("./security/JwtTokenManager");
@@ -49,6 +52,20 @@ container.register([
   {
     key: ThreadRepository.name,
     Class: ThreadRepositoryPostgres,
+    parameter: {
+      dependencies: [
+        {
+          concrete: pool,
+        },
+        {
+          concrete: nanoid,
+        },
+      ],
+    },
+  },
+  {
+    key: CommentRepository.name,
+    Class: CommentRepositoryPostgres,
     parameter: {
       dependencies: [
         {
@@ -123,6 +140,23 @@ container.register([
         {
           name: "threadRepository",
           internal: ThreadRepository.name,
+        },
+        {
+          name: "authenticationTokenManager",
+          internal: AuthenticationTokenManager.name,
+        },
+      ],
+    },
+  },
+  {
+    key: CommentUseCase.name,
+    Class: CommentUseCase,
+    parameter: {
+      injectType: "destructuring",
+      dependencies: [
+        {
+          name: "commentRepository",
+          internal: CommentRepository.name,
         },
         {
           name: "authenticationTokenManager",

@@ -1,4 +1,4 @@
-class PostingThreadComment {
+class PostingComment {
   constructor(payload) {
     this._verifyPayload(payload);
 
@@ -23,4 +23,4 @@ class PostingThreadComment {
   }
 }
 
-module.exports = PostingThreadComment;
+module.exports = PostingComment;

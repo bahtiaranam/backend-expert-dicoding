@@ -1,12 +1,12 @@
-const PostingThreadComment = require("../PostingThreadComment");
+const PostingComment = require("../PostingComment");
 
-describe("a PostingThreadComment entities", () => {
+describe("a PostingComment entities", () => {
   it("should throw error when payload did not contain needed property", () => {
     // Arrange
     const payload = {};
 
     // Action and Assert
-    expect(() => new PostingThreadComment(payload)).toThrowError(
+    expect(() => new PostingComment(payload)).toThrowError(
       "POSTING_THREAD_COMMENT.NOT_CONTAIN_NEEDED_PROPERTY"
     );
   });
@@ -18,7 +18,7 @@ describe("a PostingThreadComment entities", () => {
     };
 
     // Action and Assert
-    expect(() => new PostingThreadComment(payload)).toThrowError(
+    expect(() => new PostingComment(payload)).toThrowError(
       "POSTING_THREAD_COMMENT.NOT_MEET_DATA_TYPE_SPECIFICATION"
     );
   });
@@ -33,7 +33,7 @@ describe("a PostingThreadComment entities", () => {
     };
 
     // Action
-    const postingThreadComment = new PostingThreadComment(payload);
+    const postingThreadComment = new PostingComment(payload);
 
     // Assert
     expect(postingThreadComment.threadId).toEqual(payload.threadId);
