@@ -8,15 +8,15 @@ const CommentRepositoryPostgres = require("../CommentRepositoryPostgres");
 const CommentsTableTestHelper = require("../../../../tests/CommentsTableTestHelper");
 
 describe("ThreadRepositoryPostgres", () => {
-  let thread_payload, thread_comment_payload;
+  let postingThread, postingThreadComment;
   beforeEach(() => {
-    thread_payload = {
+    postingThread = {
       title: "this is title",
       body: "this is body",
-      username: "dicoding",
       owner: "user-123",
+      username: "dicoding",
     };
-    thread_comment_payload = {
+    postingThreadComment = {
       threadId: "thread-12345",
       content: "this is content",
       username: "dicoding",
@@ -35,13 +35,13 @@ describe("ThreadRepositoryPostgres", () => {
   describe("addThread function", () => {
     it("should persist add thread and return posting thread correctly", async () => {
       // Arrange
-      const postingThread = new PostingThread({
-        title: "this is title",
-        body: "this is body",
-        username: "dicoding",
-        owner: "user-123",
-      });
+      const postThreadResponse = {
+        id: "thread-12345",
+        title: postingThread.title,
+        owner: postingThread.owner,
+      };
       const fakeIdGenerator = () => "12345"; // stub!
+
       const threadRepositoryPostgres = new ThreadRepositoryPostgres(
         pool,
         fakeIdGenerator
@@ -53,6 +53,8 @@ describe("ThreadRepositoryPostgres", () => {
       );
 
       // Assert
+      expect(addedThread).toStrictEqual(postThreadResponse);
+
       const threads = await CommentsTableTestHelper.verifyCommentById(
         addedThread.id,
         "threads"
@@ -69,9 +71,7 @@ describe("ThreadRepositoryPostgres", () => {
   describe("getThreadDetail function", () => {
     it("should persist get thread correctly", async () => {
       // Arrange
-      const postingThread = new PostingThread(thread_payload);
-      const postingThreadComment = new PostingComment(thread_comment_payload);
-      const payload = new GetThreadDetail({ threadId: "thread-12345" });
+      const payload = { threadId: "thread-12345" };
 
       const fakeIdGenerator = () => "12345"; // stub!
       const threadRepositoryPostgres = new ThreadRepositoryPostgres(
@@ -86,13 +86,23 @@ describe("ThreadRepositoryPostgres", () => {
       // Action
       await threadRepositoryPostgres.addThread(postingThread);
       await commentRepositoryPostgres.addComment(postingThreadComment);
-      await threadRepositoryPostgres.getThreadDetail(payload);
+      const getThread = await threadRepositoryPostgres.getThreadDetail(payload);
 
       // Assert
-      const threads = await ThreadsTableTestHelper.getThreadDetail(payload);
+      expect(getThread).toStrictEqual({
+        id: payload.threadId,
+        title: postingThread.title,
+        body: postingThread.body,
+        date: getThread.date,
+        username: postingThread.username,
+      });
 
+      const threads = await ThreadsTableTestHelper.getThreadDetail(payload);
       expect(threads.rows).toHaveLength(1);
       expect(threads.rows[0].id).toEqual("thread-12345");
+      expect(threads.rows[0].title).toEqual(postingThread.title);
+      expect(threads.rows[0].body).toEqual(postingThread.body);
+      expect(threads.rows[0].username).toEqual(postingThread.username);
     });
   });
 });

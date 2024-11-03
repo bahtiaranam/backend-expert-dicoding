@@ -13,14 +13,15 @@ describe("CommentUseCase", () => {
       threadId: "thread-123",
       content: "sebuah body thread",
       owner: "user-123",
+      username: "dicoding",
     };
 
-    const mockAddComment = new PostingComment({
+    const mockAddComment = {
       id: "comment-123",
       threadId: useCasePayload.threadId,
       content: useCasePayload.content,
       owner: useCasePayload.owner,
-    });
+    };
 
     /** creating dependency of use case */
     const mockCommentRepository = new CommentRepository();
@@ -39,27 +40,17 @@ describe("CommentUseCase", () => {
     });
 
     // Action
-    const postingThreadComment = await addCommentUseCase.executeAddComment(
+    const postingComment = await addCommentUseCase.executeAddComment(
       useCasePayload
     );
 
     // Assert
-    expect(postingThreadComment).toMatchObject({
-      threadId: useCasePayload.threadId,
-      content: useCasePayload.content,
-      owner: useCasePayload.owner,
-    });
-
+    expect(mockCommentRepository.addComment).toBeCalledWith(useCasePayload);
     expect(mockCommentRepository.verifyCommentById).toBeCalledWith(
       useCasePayload.threadId,
       "threads"
     );
-
-    expect(mockCommentRepository.addComment).toBeCalledWith({
-      threadId: useCasePayload.threadId,
-      content: useCasePayload.content,
-      owner: useCasePayload.owner,
-    });
+    expect(postingComment).toEqual(mockAddComment);
   });
 
   it("should orchestrating the delete thread comment action correctly", async () => {
@@ -70,11 +61,12 @@ describe("CommentUseCase", () => {
       userId: "user-123",
     };
 
-    const mockDeleteComment = new DeleteComment({
+    const mockDeleteComment = {
+      id: "comment-123",
       threadId: useCasePayload.threadId,
       commentId: useCasePayload.commentId,
       userId: useCasePayload.userId,
-    });
+    };
 
     /** creating dependency of use case */
     const mockCommentRepository = new CommentRepository();
@@ -82,10 +74,10 @@ describe("CommentUseCase", () => {
     /** mocking needed function */
     mockCommentRepository.verifyCommentById = jest
       .fn()
-      .mockImplementation(() => Promise.resolve());
+      .mockImplementation(() => Promise.resolve([]));
     mockCommentRepository.verifyCommentOwner = jest
       .fn()
-      .mockImplementation(() => Promise.resolve());
+      .mockImplementation(() => Promise.resolve([]));
     mockCommentRepository.deleteCommentById = jest
       .fn()
       .mockImplementation(() => Promise.resolve(mockDeleteComment));
@@ -101,17 +93,17 @@ describe("CommentUseCase", () => {
     );
 
     // Assert
-    expect(deleteComment).toMatchObject({
-      threadId: useCasePayload.threadId,
-      commentId: useCasePayload.commentId,
-      userId: useCasePayload.userId,
-    });
-
     expect(mockCommentRepository.verifyCommentById).toBeCalledWith(
       useCasePayload.commentId,
       "comments"
     );
-
-    expect(mockCommentRepository.deleteCommentById).toBeCalled();
+    expect(mockCommentRepository.verifyCommentOwner).toBeCalledWith(
+      useCasePayload.userId,
+      useCasePayload.commentId
+    );
+    expect(mockCommentRepository.deleteCommentById).toBeCalledWith(
+      useCasePayload
+    );
+    expect(deleteComment).toEqual(mockDeleteComment);
   });
 });

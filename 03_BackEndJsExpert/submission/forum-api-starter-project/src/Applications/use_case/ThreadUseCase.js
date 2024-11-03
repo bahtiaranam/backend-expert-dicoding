@@ -12,8 +12,10 @@ class PostingThreadUseCase {
   }
 
   async executeGetThreadDetail(useCasePayload) {
-    const getThreadDetail = new GetThreadDetail(useCasePayload);
-    return this._threadRepository.getThreadDetail(getThreadDetail);
+    const threadId = new GetThreadDetail(useCasePayload);
+    const thread = await this._threadRepository.getThreadDetail(threadId);
+    const comments = await this._threadRepository.getThreadComments(threadId);
+    return { ...thread, comments };
   }
 }
 

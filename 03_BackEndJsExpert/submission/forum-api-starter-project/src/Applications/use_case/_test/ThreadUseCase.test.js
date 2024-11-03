@@ -18,13 +18,13 @@ describe("ThreadUseCase", () => {
       owner: "user-123",
     };
 
-    const mockAddThread = new PostingThread({
+    const mockAddThread = {
       id: "thread-123",
       title: useCasePayload.title,
       body: useCasePayload.body,
       username: useCasePayload.username,
       owner: useCasePayload.owner,
-    });
+    };
 
     /** creating dependency of use case */
     const mockThreadRepository = new ThreadRepository();
@@ -45,14 +45,9 @@ describe("ThreadUseCase", () => {
     );
 
     // Assert
-    expect(postingThread).toMatchObject({
-      title: useCasePayload.title,
-      body: useCasePayload.body,
-      username: useCasePayload.username,
-      owner: useCasePayload.owner,
-    });
-
-    expect(mockThreadRepository.addThread).toBeCalledWith({
+    expect(mockThreadRepository.addThread).toBeCalledWith(useCasePayload);
+    expect(postingThread).toEqual({
+      id: "thread-123",
       title: useCasePayload.title,
       body: useCasePayload.body,
       username: useCasePayload.username,
@@ -66,9 +61,28 @@ describe("ThreadUseCase", () => {
       threadId: "thread-123",
     };
 
-    const mockGetThreadDetail = new GetThreadDetail({
-      threadId: "thread-123",
-    });
+    const mockGetThreadDetail = {
+      id: "thread-123",
+      title: "Title Thread",
+      body: "sebuah body thread",
+      date: "2021-08-08T07:19:09.775Z",
+      username: "dicoding",
+    };
+
+    const mockGetThreadComments = [
+      {
+        id: "comment-123",
+        username: "johndoe",
+        date: "2021-08-08T07:22:33.555Z",
+        content: "sebuah comment",
+      },
+      {
+        id: "comment-456",
+        username: "dicoding",
+        date: "2021-08-08T07:26:21.338Z",
+        content: "komentar telah dihapus",
+      },
+    ];
 
     /** creating dependency of use case */
     const mockThreadRepository = new ThreadRepository();
@@ -77,6 +91,9 @@ describe("ThreadUseCase", () => {
     mockThreadRepository.getThreadDetail = jest
       .fn()
       .mockImplementation(() => Promise.resolve(mockGetThreadDetail));
+    mockThreadRepository.getThreadComments = jest
+      .fn()
+      .mockImplementation(() => Promise.resolve(mockGetThreadComments));
 
     /** creating use case instance */
     const getThreadDetailUseCase = new ThreadUseCase({
@@ -89,12 +106,13 @@ describe("ThreadUseCase", () => {
     );
 
     // Assert
-    expect(getThreadDetail).toStrictEqual(
-      new GetThreadDetail({
-        threadId: "thread-123",
-      })
+    expect(mockThreadRepository.getThreadDetail).toBeCalledWith(useCasePayload);
+    expect(mockThreadRepository.getThreadComments).toBeCalledWith(
+      useCasePayload
     );
-
-    expect(mockThreadRepository.getThreadDetail).toBeCalled();
+    expect(getThreadDetail).toEqual({
+      ...mockGetThreadDetail,
+      comments: mockGetThreadComments,
+    });
   });
 });

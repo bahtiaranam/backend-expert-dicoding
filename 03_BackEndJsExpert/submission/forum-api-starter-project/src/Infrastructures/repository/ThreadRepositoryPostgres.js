@@ -21,48 +21,34 @@ class ThreadRepositoryPostgres extends ThreadRepository {
     return result.rows[0];
   }
 
-  async getThreadDetail(payload) {
-    const { threadId: thread_id } = payload;
+  async getThreadDetail(id) {
+    const { threadId: thread_id } = id;
 
     const query = {
       text: `
-        SELECT 
-          threads.id,
-          threads.title,
-          threads.body,
-          threads.date,
-          threads.username,
-          comments.id as comment_id,
-          comments.username as comment_username,
-          comments.date as comment_date,
-          comments.content as comment_content,
-          comments.is_deleted as comment_is_deleted
-        FROM threads
-        LEFT JOIN comments ON comments.thread_id = threads.id
-        WHERE threads.id = $1
+        SELECT id, title, body, date, username FROM threads WHERE id = $1
       `,
       values: [thread_id],
     };
 
     const result = await this._pool.query(query);
 
-    const thread = {
-      id: result.rows[0].id,
-      title: result.rows[0].title,
-      body: result.rows[0].body,
-      date: result.rows[0].date,
-      username: result.rows[0].username,
-      comments: result.rows
-        .filter((row) => row.comment_id !== null)
-        .map((row) => ({
-          id: row.comment_id,
-          username: row.comment_username,
-          date: row.comment_date,
-          content: row.comment_content,
-        })),
+    return result.rows[0];
+  }
+
+  async getThreadComments(id) {
+    const { threadId: thread_id } = id;
+
+    const query = {
+      text: `
+        SELECT id, username, date, content FROM comments WHERE thread_id = $1 ORDER BY date ASC
+      `,
+      values: [thread_id],
     };
 
-    return thread;
+    const result = await this._pool.query(query);
+
+    return result.rows;
   }
 }
 
