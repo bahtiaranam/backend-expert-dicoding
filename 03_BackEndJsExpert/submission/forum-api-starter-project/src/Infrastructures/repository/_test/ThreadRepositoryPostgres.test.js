@@ -105,4 +105,40 @@ describe("ThreadRepositoryPostgres", () => {
       expect(threads.rows[0].username).toEqual(postingThread.username);
     });
   });
+
+  describe("getThreadComments function", () => {
+    it("should persist get thread comments correctly", async () => {
+      // Arrange
+      const payload = { threadId: "thread-12345" };
+
+      const fakeIdGenerator = () => "12345"; // stub!
+      const threadRepositoryPostgres = new ThreadRepositoryPostgres(
+        pool,
+        fakeIdGenerator
+      );
+      const commentRepositoryPostgres = new CommentRepositoryPostgres(
+        pool,
+        fakeIdGenerator
+      );
+
+      // Action
+      await threadRepositoryPostgres.addThread(postingThread);
+      const postingCommentResult = await commentRepositoryPostgres.addComment(
+        postingThreadComment
+      );
+      const getThreadComment = await threadRepositoryPostgres.getThreadComments(
+        payload
+      );
+
+      // Assert
+      expect(getThreadComment).toStrictEqual([
+        {
+          id: postingCommentResult.id,
+          username: postingThreadComment.username,
+          date: getThreadComment[0].date,
+          content: postingCommentResult.content,
+        },
+      ]);
+    });
+  });
 });

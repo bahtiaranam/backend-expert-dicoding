@@ -7,103 +7,109 @@ describe("CommentUseCase", () => {
   /**
    * Menguji apakah use case mampu mengoskestrasikan langkah demi langkah dengan benar.
    */
-  it("should orchestrating the add thread comment action correctly", async () => {
-    // Arrange
-    const useCasePayload = {
-      threadId: "thread-123",
-      content: "sebuah body thread",
-      owner: "user-123",
-      username: "dicoding",
-    };
+  describe("executeAddComment", () => {
+    it("should orchestrating the add thread comment action correctly", async () => {
+      // Arrange
+      const useCasePayload = {
+        threadId: "thread-123",
+        content: "sebuah body thread",
+        owner: "user-123",
+        username: "dicoding",
+      };
 
-    const mockAddComment = {
-      id: "comment-123",
-      threadId: useCasePayload.threadId,
-      content: useCasePayload.content,
-      owner: useCasePayload.owner,
-    };
+      const mockAddComment = {
+        id: "comment-123",
+        threadId: useCasePayload.threadId,
+        content: useCasePayload.content,
+        owner: useCasePayload.owner,
+      };
 
-    /** creating dependency of use case */
-    const mockCommentRepository = new CommentRepository();
+      /** creating dependency of use case */
+      const mockCommentRepository = new CommentRepository();
 
-    /** mocking needed function */
-    mockCommentRepository.verifyCommentById = jest
-      .fn()
-      .mockImplementation(() => Promise.resolve());
-    mockCommentRepository.addComment = jest
-      .fn()
-      .mockImplementation(() => Promise.resolve(mockAddComment));
+      /** mocking needed function */
+      mockCommentRepository.verifyCommentById = jest
+        .fn()
+        .mockImplementation(() => Promise.resolve());
+      mockCommentRepository.addComment = jest
+        .fn()
+        .mockImplementation((comment) =>
+          Promise.resolve({
+            id: "comment-123",
+            threadId: comment.threadId,
+            content: comment.content,
+            owner: comment.owner,
+          })
+        );
 
-    /** creating use case instance */
-    const addCommentUseCase = new CommentUseCase({
-      commentRepository: mockCommentRepository,
+      /** creating use case instance */
+      const addCommentUseCase = new CommentUseCase({
+        commentRepository: mockCommentRepository,
+      });
+
+      // Action
+      const postingComment = await addCommentUseCase.executeAddComment(
+        useCasePayload
+      );
+
+      // Assert
+      expect(mockCommentRepository.addComment).toBeCalledWith(
+        expect.any(PostingComment)
+      );
+      expect(mockCommentRepository.verifyCommentById).toBeCalledWith(
+        useCasePayload.threadId,
+        "threads"
+      );
+      expect(postingComment).toEqual(mockAddComment);
     });
-
-    // Action
-    const postingComment = await addCommentUseCase.executeAddComment(
-      useCasePayload
-    );
-
-    // Assert
-    expect(mockCommentRepository.addComment).toBeCalledWith(useCasePayload);
-    expect(mockCommentRepository.verifyCommentById).toBeCalledWith(
-      useCasePayload.threadId,
-      "threads"
-    );
-    expect(postingComment).toEqual(mockAddComment);
   });
 
-  it("should orchestrating the delete thread comment action correctly", async () => {
-    // Arrange
-    const useCasePayload = {
-      threadId: "thread-123",
-      commentId: "comment-123",
-      userId: "user-123",
-    };
+  describe("executeDeleteComment", () => {
+    it("should orchestrating the delete thread comment action correctly", async () => {
+      // Arrange
+      const useCasePayload = {
+        threadId: "thread-123",
+        commentId: "comment-12345",
+        userId: "user-123",
+      };
 
-    const mockDeleteComment = {
-      id: "comment-123",
-      threadId: useCasePayload.threadId,
-      commentId: useCasePayload.commentId,
-      userId: useCasePayload.userId,
-    };
+      /** creating dependency of use case */
+      const mockCommentRepository = new CommentRepository();
 
-    /** creating dependency of use case */
-    const mockCommentRepository = new CommentRepository();
+      /** mocking needed function */
+      mockCommentRepository.verifyCommentById = jest
+        .fn()
+        .mockImplementation(() => Promise.resolve());
+      mockCommentRepository.verifyCommentOwner = jest
+        .fn()
+        .mockImplementation(() => Promise.resolve());
+      mockCommentRepository.deleteCommentById = jest
+        .fn()
+        .mockImplementation((comment) => Promise.resolve(comment));
 
-    /** mocking needed function */
-    mockCommentRepository.verifyCommentById = jest
-      .fn()
-      .mockImplementation(() => Promise.resolve([]));
-    mockCommentRepository.verifyCommentOwner = jest
-      .fn()
-      .mockImplementation(() => Promise.resolve([]));
-    mockCommentRepository.deleteCommentById = jest
-      .fn()
-      .mockImplementation(() => Promise.resolve(mockDeleteComment));
+      /** creating use case instance */
+      const deleteCommentUseCase = new CommentUseCase({
+        commentRepository: mockCommentRepository,
+      });
 
-    /** creating use case instance */
-    const deleteCommentUseCase = new CommentUseCase({
-      commentRepository: mockCommentRepository,
+      // Action
+      const deleteComment = await deleteCommentUseCase.executeDeleteComment(
+        useCasePayload
+      );
+
+      // Assert
+      expect(mockCommentRepository.verifyCommentById).toBeCalledWith(
+        useCasePayload.commentId,
+        "comments"
+      );
+      expect(mockCommentRepository.verifyCommentOwner).toBeCalledWith(
+        useCasePayload.userId,
+        useCasePayload.commentId
+      );
+      expect(mockCommentRepository.deleteCommentById).toBeCalledWith(
+        useCasePayload
+      );
+      expect(deleteComment).not.toEqual(undefined); // return query result
     });
-
-    // Action
-    const deleteComment = await deleteCommentUseCase.executeDeleteComment(
-      useCasePayload
-    );
-
-    // Assert
-    expect(mockCommentRepository.verifyCommentById).toBeCalledWith(
-      useCasePayload.commentId,
-      "comments"
-    );
-    expect(mockCommentRepository.verifyCommentOwner).toBeCalledWith(
-      useCasePayload.userId,
-      useCasePayload.commentId
-    );
-    expect(mockCommentRepository.deleteCommentById).toBeCalledWith(
-      useCasePayload
-    );
-    expect(deleteComment).toEqual(mockDeleteComment);
   });
 });
