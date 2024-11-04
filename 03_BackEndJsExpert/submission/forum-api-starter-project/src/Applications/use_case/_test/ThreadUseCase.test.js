@@ -67,10 +67,8 @@ describe("ThreadUseCase", () => {
     mockThreadRepository.addThread = jest.fn().mockImplementation((thread) =>
       Promise.resolve({
         id: "thread-123",
-        body: thread.body,
         title: thread.title,
-        username: thread.username,
-        date: expect.any(String),
+        owner: thread.owner,
       })
     );
     mockCommentRepository.verifyCommentById = jest
@@ -78,21 +76,22 @@ describe("ThreadUseCase", () => {
       .mockImplementation(() => Promise.resolve());
     mockCommentRepository.addComment = jest.fn().mockImplementation((comment) =>
       Promise.resolve({
-        id: "comment-123",
+        id: comment.id,
         content: comment.content,
-        username: comment.username,
-        date: expect.any(String),
+        owner: comment.owner,
       })
     );
-    mockThreadRepository.getThreadDetail = jest.fn().mockImplementation((id) =>
-      Promise.resolve({
-        id: "thread-123",
-        title: addThreadPayload.title,
-        body: addThreadPayload.body,
-        date: expect.any(String),
-        username: addThreadPayload.username,
-      })
-    );
+    mockThreadRepository.getThreadDetail = jest
+      .fn()
+      .mockImplementation((thread) =>
+        Promise.resolve({
+          id: thread.threadId,
+          title: addThreadPayload.title,
+          body: addThreadPayload.body,
+          date: expect.any(String),
+          username: addThreadPayload.username,
+        })
+      );
     mockThreadRepository.getThreadComments = jest.fn().mockImplementation(() =>
       Promise.resolve([
         {
@@ -112,12 +111,8 @@ describe("ThreadUseCase", () => {
       commentRepository: mockCommentRepository,
     });
 
-    const threadResponse = await threadUseCase.executeAddThread(
-      addThreadPayload
-    );
-    const commentResponse = await addCommentUseCase.executeAddComment(
-      addCommentPayload
-    );
+    await threadUseCase.executeAddThread(addThreadPayload);
+    await addCommentUseCase.executeAddComment(addCommentPayload);
     const getThreadDetail = await threadUseCase.executeGetThreadDetail(
       useCasePayload
     );
@@ -131,8 +126,19 @@ describe("ThreadUseCase", () => {
       useCasePayload
     );
     expect(getThreadDetail).toEqual({
-      ...threadResponse,
-      comments: [commentResponse],
+      id: useCasePayload.threadId,
+      title: addThreadPayload.title,
+      body: addThreadPayload.body,
+      date: expect.any(String),
+      username: addThreadPayload.username,
+      comments: [
+        {
+          id: "comment-123",
+          username: addCommentPayload.username,
+          date: expect.any(String),
+          content: addCommentPayload.content,
+        },
+      ],
     });
   });
 });

@@ -1,5 +1,3 @@
-const PostingComment = require("../../../Domains/comments/entities/PostingComment");
-const DeleteComment = require("../../../Domains/comments/entities/DeleteComment");
 const CommentRepository = require("../../../Domains/comments/CommentRepository");
 const CommentUseCase = require("../CommentUseCase");
 
@@ -19,7 +17,6 @@ describe("CommentUseCase", () => {
 
       const mockAddComment = {
         id: "comment-123",
-        threadId: useCasePayload.threadId,
         content: useCasePayload.content,
         owner: useCasePayload.owner,
       };
@@ -36,7 +33,6 @@ describe("CommentUseCase", () => {
         .mockImplementation((comment) =>
           Promise.resolve({
             id: "comment-123",
-            threadId: comment.threadId,
             content: comment.content,
             owner: comment.owner,
           })
@@ -53,9 +49,7 @@ describe("CommentUseCase", () => {
       );
 
       // Assert
-      expect(mockCommentRepository.addComment).toBeCalledWith(
-        expect.any(PostingComment)
-      );
+      expect(mockCommentRepository.addComment).toBeCalledWith(useCasePayload);
       expect(mockCommentRepository.verifyCommentById).toBeCalledWith(
         useCasePayload.threadId,
         "threads"
@@ -109,7 +103,7 @@ describe("CommentUseCase", () => {
       expect(mockCommentRepository.deleteCommentById).toBeCalledWith(
         useCasePayload
       );
-      expect(deleteComment).not.toEqual(undefined); // return query result
+      expect(deleteComment).not.toEqual(undefined); // receive return query result
     });
   });
 });
