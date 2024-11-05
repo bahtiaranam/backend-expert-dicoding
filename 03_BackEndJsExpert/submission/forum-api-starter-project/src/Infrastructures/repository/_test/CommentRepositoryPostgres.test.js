@@ -1,24 +1,17 @@
 const CommentsTableTestHelper = require("../../../../tests/CommentsTableTestHelper");
 const NotFoundError = require("../../../Commons/exceptions/NotFoundError");
 const pool = require("../../database/postgres/pool");
-const ThreadRepositoryPostgres = require("../ThreadRepositoryPostgres");
 const CommentRepositoryPostgres = require("../CommentRepositoryPostgres");
 const AuthorizationError = require("../../../Commons/exceptions/AuthorizationError");
-const PostingThread = require("../../../Domains/threads/entities/PostingThread");
-const PostingComment = require("../../../Domains/comments/entities/PostingComment");
-const DeleteComment = require("../../../Domains/comments/entities/DeleteComment");
 const ThreadsTableTestHelper = require("../../../../tests/ThreadsTableTestHelper");
 
 describe("CommentRepositoryPostgres", () => {
   let fakeIdGenerator;
-  let postingThread, postingComment, deleteComment;
-  let threadRepositoryPostgres, commentRepositoryPostgres;
+  let postingThread, postingComment;
+  let commentRepositoryPostgres;
+
   beforeEach(() => {
     fakeIdGenerator = () => "12345"; // stub!
-    threadRepositoryPostgres = new ThreadRepositoryPostgres(
-      pool,
-      fakeIdGenerator
-    );
     commentRepositoryPostgres = new CommentRepositoryPostgres(
       pool,
       fakeIdGenerator
@@ -35,14 +28,10 @@ describe("CommentRepositoryPostgres", () => {
       username: "dicoding",
       owner: "user-123",
     };
-    deleteComment = {
-      threadId: "thread-12345",
-      commentId: "comment-12345",
-      userId: "user-12345",
-    };
   });
 
   afterEach(async () => {
+    await ThreadsTableTestHelper.cleanTable();
     await CommentsTableTestHelper.cleanTable();
   });
 
@@ -51,9 +40,16 @@ describe("CommentRepositoryPostgres", () => {
   });
 
   describe("verifyCommentById function", () => {
-    it("should throw NotFoundError when thread not found", async () => {
+    it("should throw NotFoundError when comment not found", async () => {
       // Arrange
-      await CommentsTableTestHelper.verifyCommentById("thread-123", "threads");
+      await ThreadsTableTestHelper.addThread({
+        id: "thread-12345",
+        ...postingThread,
+      });
+      await CommentsTableTestHelper.addComment({
+        id: "comment-12345",
+        ...postingComment,
+      });
       const commentRepositoryPostgresNotFound = new CommentRepositoryPostgres(
         pool,
         {}
@@ -61,52 +57,80 @@ describe("CommentRepositoryPostgres", () => {
 
       // Action & Assert
       await expect(
-        commentRepositoryPostgresNotFound.verifyCommentById(
-          "thread-123",
-          "threads"
-        )
-      ).rejects.toThrowError(NotFoundError);
+        commentRepositoryPostgresNotFound.verifyCommentById("comment-23212")
+      ).rejects.toThrowError(new NotFoundError("data tidak ditemukan"));
     });
-    it("should return true when thread found", async () => {
-      // Action
-      const addedThread = await threadRepositoryPostgres.addThread(
-        postingThread
-      );
-      const verifyThread = await commentRepositoryPostgres.verifyCommentById(
-        addedThread.id,
-        "threads"
-      );
-      const verifyThreadComment =
-        await CommentsTableTestHelper.verifyCommentById(
-          addedThread.id,
-          "threads"
-        );
-
-      // Assert
-      expect(verifyThread).toEqual({
-        id: addedThread.id,
-        date: verifyThread.date,
+    it("should return true when comment found", async () => {
+      // Arrange
+      await ThreadsTableTestHelper.addThread({
+        id: "thread-12345",
         ...postingThread,
       });
-      expect(verifyThreadComment).toHaveLength(1);
-      expect(verifyThreadComment[0].id).toEqual(addedThread.id);
-      expect(verifyThreadComment[0].title).toEqual(postingThread.title);
-      expect(verifyThreadComment[0].body).toEqual(postingThread.body);
-      expect(verifyThreadComment[0].username).toEqual(postingThread.username);
-      expect(verifyThreadComment[0].owner).toEqual(postingThread.owner);
+      await CommentsTableTestHelper.addComment({
+        id: "comment-12345",
+        ...postingComment,
+      });
+
+      // Action & Assert
+      await expect(
+        commentRepositoryPostgres.verifyCommentById("comment-12345")
+      ).resolves.not.toThrowError();
+    });
+  });
+
+  describe("verifyCommentOwner function", () => {
+    it("should return AuthorizationError when userId and owner not match", async () => {
+      // Action
+      await ThreadsTableTestHelper.addThread({
+        id: "thread-12345",
+        ...postingThread,
+      });
+      await CommentsTableTestHelper.addComment({
+        id: "comment-12345",
+        ...postingComment,
+      });
+      await expect(
+        commentRepositoryPostgres.verifyCommentOwner(
+          "user-123-random",
+          "comment-12345"
+        )
+      ).rejects.toThrowError(
+        new AuthorizationError(
+          "Anda tidak memiliki hak akses untuk menghapus komentar ini"
+        )
+      );
+    });
+
+    it("should return nothing when userId and owner match", async () => {
+      // Arrange
+      await ThreadsTableTestHelper.addThread({
+        id: "thread-12345",
+        ...postingThread,
+      });
+      await CommentsTableTestHelper.addComment({
+        id: "comment-12345",
+        ...postingComment,
+      });
+      // Action
+      const verifyOwner = await commentRepositoryPostgres.verifyCommentOwner(
+        "user-123",
+        "comment-12345"
+      );
+
+      // Assert
+      expect(verifyOwner).toEqual(undefined); // undefined because no error thrown
     });
   });
 
   describe("addComment function", () => {
     it("should persist add comment and return posting comment correctly", async () => {
       // Arange
-      const postingCommentResponse = {
-        id: "comment-12345",
-        content: postingComment.content,
-        owner: postingComment.owner,
-      };
+      await ThreadsTableTestHelper.addThread({
+        id: "thread-12345",
+        ...postingThread,
+      });
+
       // Action
-      await threadRepositoryPostgres.addThread(postingThread);
       const addedComment = await commentRepositoryPostgres.addComment(
         postingComment
       );
@@ -116,81 +140,85 @@ describe("CommentRepositoryPostgres", () => {
       );
 
       // Assert
-      expect(addedComment).toEqual(postingCommentResponse);
+      expect(addedComment).toEqual({
+        id: "comment-12345",
+        content: postingComment.content,
+        owner: postingComment.owner,
+      });
+
       expect(verifyComment).toHaveLength(1);
-      expect(verifyComment[0].id).toEqual(postingCommentResponse.id);
+      expect(verifyComment[0].id).toEqual("comment-12345");
       expect(verifyComment[0].content).toEqual(postingComment.content);
       expect(verifyComment[0].owner).toEqual(postingComment.owner);
-
-      await ThreadsTableTestHelper.cleanTable();
-      await CommentsTableTestHelper.cleanTable();
     });
   });
 
-  describe("verifyCommentOwner function", () => {
-    it("should return AuthorizationError when userId and owner not match", async () => {
-      // Action
-      await threadRepositoryPostgres.addThread(postingThread);
-      await commentRepositoryPostgres.addComment(postingComment);
-
-      await expect(
-        commentRepositoryPostgres.verifyCommentOwner(
-          deleteComment.userId,
-          deleteComment.commentId
-        )
-      ).rejects.toThrowError(
-        new AuthorizationError(
-          "Anda tidak memiliki hak akses untuk menghapus komentar ini"
-        )
-      );
-    });
-
-    it("should return owner when userId and owner match", async () => {
+  describe("getThreadComments function", () => {
+    it("should persist get thread comments correctly", async () => {
       // Arrange
-      await threadRepositoryPostgres.addThread(postingThread);
-      await commentRepositoryPostgres.addComment(postingComment);
+      const commentRepositoryPostgres = new CommentRepositoryPostgres(
+        pool,
+        fakeIdGenerator
+      );
 
       // Action
-      const verifyOwner = await commentRepositoryPostgres.verifyCommentOwner(
-        postingComment.owner,
-        deleteComment.commentId
-      );
+      await ThreadsTableTestHelper.addThread({
+        id: "thread-12345",
+        ...postingThread,
+      });
+      await CommentsTableTestHelper.addComment({
+        id: "comment-12345",
+        ...postingComment,
+      });
+      const getThreadComment =
+        await commentRepositoryPostgres.getThreadComments({
+          threadId: "thread-12345",
+        });
 
       // Assert
-      expect(verifyOwner).toEqual({ owner: postingComment.owner });
-      await ThreadsTableTestHelper.cleanTable();
-      await CommentsTableTestHelper.cleanTable();
+      expect(getThreadComment).toMatchObject([
+        {
+          id: "comment-12345",
+          username: postingComment.username,
+          date: expect.any(Date),
+          content: postingComment.content,
+          is_deleted: false,
+        },
+      ]);
     });
   });
 
   describe("deleteCommentById function", () => {
     it("should persist delete comment success", async () => {
       // Arrange
-      const payload = {
-        threadId: "thread-12345",
-        commentId: "comment-12345",
-      };
-
-      await threadRepositoryPostgres.addThread(postingThread);
-      await commentRepositoryPostgres.addComment(postingComment);
-      await commentRepositoryPostgres.verifyCommentOwner(
-        postingComment.owner,
-        deleteComment.commentId
+      await ThreadsTableTestHelper.addThread({
+        id: "thread-12345",
+        ...postingThread,
+      });
+      await CommentsTableTestHelper.addComment({
+        id: "comment-12345",
+        ...postingComment,
+      });
+      await CommentsTableTestHelper.verifyCommentOwner(
+        "user-123",
+        "comment-12345"
       );
 
       // Action
       const deleteThreadComment =
-        await commentRepositoryPostgres.deleteCommentById(payload);
-
-      expect(deleteThreadComment.rowCount).toEqual(1);
+        await commentRepositoryPostgres.deleteCommentById({
+          threadId: "thread-12345",
+          commentId: "comment-12345",
+        });
       const comments = await CommentsTableTestHelper.verifyCommentById(
-        payload.commentId,
-        "comments"
+        "comment-12345"
       );
-      expect(comments[0].id).toEqual(payload.commentId);
-      expect(comments[0].thread_id).toEqual(payload.threadId);
+
+      // Assert
+      expect(deleteThreadComment.rowCount).toEqual(1);
+      expect(comments[0].id).toEqual("comment-12345");
+      expect(comments[0].thread_id).toEqual("thread-12345");
       expect(comments[0].is_deleted).toEqual(true);
-      expect(comments[0].content).toEqual("**komentar telah dihapus**");
     });
   });
 });

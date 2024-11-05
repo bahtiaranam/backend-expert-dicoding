@@ -9,9 +9,9 @@ class CommentRepositoryPostgres extends CommentRepository {
     this._idGenerator = idGenerator;
   }
 
-  async verifyCommentById(id, table) {
+  async verifyCommentById(id) {
     const query = {
-      text: `SELECT * FROM ${table} WHERE id = $1`,
+      text: `SELECT * FROM comments WHERE id = $1`,
       values: [id],
     };
 
@@ -20,8 +20,6 @@ class CommentRepositoryPostgres extends CommentRepository {
     if (!result.rowCount) {
       throw new NotFoundError(`data tidak ditemukan`);
     }
-
-    return result.rows[0];
   }
 
   async verifyCommentOwner(userId, commentId) {
@@ -36,8 +34,6 @@ class CommentRepositoryPostgres extends CommentRepository {
         "Anda tidak memiliki hak akses untuk menghapus komentar ini"
       );
     }
-
-    return result.rows[0];
   }
 
   async addComment(comment) {
@@ -54,11 +50,26 @@ class CommentRepositoryPostgres extends CommentRepository {
     return result.rows[0];
   }
 
+  async getThreadComments(id) {
+    const { threadId: thread_id } = id;
+
+    const query = {
+      text: `
+        SELECT id, username, date, content, is_deleted FROM comments WHERE thread_id = $1 ORDER BY date ASC
+      `,
+      values: [thread_id],
+    };
+
+    const result = await this._pool.query(query);
+
+    return result.rows;
+  }
+
   async deleteCommentById(payload) {
     const { threadId, commentId } = payload;
 
     const query = {
-      text: "UPDATE comments SET is_deleted = true, content = '**komentar telah dihapus**' WHERE id = $1 AND thread_id = $2",
+      text: "UPDATE comments SET is_deleted = true WHERE id = $1 AND thread_id = $2",
       values: [commentId, threadId],
     };
 

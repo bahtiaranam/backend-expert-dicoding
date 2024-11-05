@@ -2,9 +2,9 @@
 const pool = require("../src/Infrastructures/database/postgres/pool");
 
 const CommentsTableTestHelper = {
-  async verifyCommentById(id, table) {
+  async verifyCommentById(id) {
     const query = {
-      text: `SELECT * FROM ${table} WHERE id = $1`,
+      text: `SELECT * FROM comments WHERE id = $1`,
       values: [id],
     };
 
@@ -18,7 +18,23 @@ const CommentsTableTestHelper = {
       values: [id, thread_id, username, content, owner],
     };
 
-    await pool.query(query);
+    const result = await pool.query(query);
+
+    return result.rows[0];
+  },
+
+  async verifyCommentOwner(userId, commentId) {
+    const query = {
+      text: "SELECT owner FROM comments WHERE id = $1",
+      values: [commentId],
+    };
+
+    const result = await pool.query(query);
+    if (result.rows[0].owner !== userId) {
+      throw new AuthorizationError(
+        "Anda tidak memiliki hak akses untuk menghapus komentar ini"
+      );
+    }
   },
 
   async deleteCommentById({ threadId, commentId, userId }) {

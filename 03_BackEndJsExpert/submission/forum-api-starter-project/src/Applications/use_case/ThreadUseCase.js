@@ -2,8 +2,9 @@ const PostingThread = require("../../Domains/threads/entities/PostingThread");
 const GetThreadDetail = require("../../Domains/threads/entities/GetThreadDetail");
 
 class PostingThreadUseCase {
-  constructor({ threadRepository }) {
+  constructor({ threadRepository, commentRepository }) {
     this._threadRepository = threadRepository;
+    this._commentRepository = commentRepository;
   }
 
   async executeAddThread(useCasePayload) {
@@ -14,8 +15,16 @@ class PostingThreadUseCase {
   async executeGetThreadDetail(useCasePayload) {
     const threadId = new GetThreadDetail(useCasePayload);
     const thread = await this._threadRepository.getThreadDetail(threadId);
-    const comments = await this._threadRepository.getThreadComments(threadId);
-    return { ...thread, comments };
+    const comments = await this._commentRepository.getThreadComments(threadId);
+    const parseComments = comments?.map((comment) => ({
+      id: comment.id,
+      username: comment.username,
+      date: comment.date,
+      content: !comment.is_deleted
+        ? comment.content
+        : "**komentar telah dihapus**",
+    }));
+    return { ...thread, comments: parseComments };
   }
 }
 

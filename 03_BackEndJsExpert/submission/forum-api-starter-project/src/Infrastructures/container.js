@@ -142,6 +142,10 @@ container.register([
           internal: ThreadRepository.name,
         },
         {
+          name: "commentRepository",
+          internal: CommentRepository.name,
+        },
+        {
           name: "authenticationTokenManager",
           internal: AuthenticationTokenManager.name,
         },
@@ -154,6 +158,10 @@ container.register([
     parameter: {
       injectType: "destructuring",
       dependencies: [
+        {
+          name: "threadRepository",
+          internal: ThreadRepository.name,
+        },
         {
           name: "commentRepository",
           internal: CommentRepository.name,

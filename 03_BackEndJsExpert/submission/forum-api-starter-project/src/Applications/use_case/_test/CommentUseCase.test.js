@@ -1,4 +1,5 @@
 const CommentRepository = require("../../../Domains/comments/CommentRepository");
+const ThreadRepository = require("../../../Domains/threads/ThreadRepository");
 const CommentUseCase = require("../CommentUseCase");
 
 describe("CommentUseCase", () => {
@@ -11,8 +12,8 @@ describe("CommentUseCase", () => {
       const useCasePayload = {
         threadId: "thread-123",
         content: "sebuah body thread",
-        owner: "user-123",
         username: "dicoding",
+        owner: "user-123",
       };
 
       const mockAddComment = {
@@ -22,10 +23,11 @@ describe("CommentUseCase", () => {
       };
 
       /** creating dependency of use case */
+      const mockThreadRepository = new ThreadRepository();
       const mockCommentRepository = new CommentRepository();
 
       /** mocking needed function */
-      mockCommentRepository.verifyCommentById = jest
+      mockThreadRepository.verifyThreadById = jest
         .fn()
         .mockImplementation(() => Promise.resolve());
       mockCommentRepository.addComment = jest
@@ -39,21 +41,21 @@ describe("CommentUseCase", () => {
         );
 
       /** creating use case instance */
-      const addCommentUseCase = new CommentUseCase({
+      const commentUseCase = new CommentUseCase({
+        threadRepository: mockThreadRepository,
         commentRepository: mockCommentRepository,
       });
 
       // Action
-      const postingComment = await addCommentUseCase.executeAddComment(
+      const postingComment = await commentUseCase.executeAddComment(
         useCasePayload
       );
 
       // Assert
-      expect(mockCommentRepository.addComment).toBeCalledWith(useCasePayload);
-      expect(mockCommentRepository.verifyCommentById).toBeCalledWith(
-        useCasePayload.threadId,
-        "threads"
+      expect(mockThreadRepository.verifyThreadById).toBeCalledWith(
+        useCasePayload.threadId
       );
+      expect(mockCommentRepository.addComment).toBeCalledWith(useCasePayload);
       expect(postingComment).toEqual(mockAddComment);
     });
   });
@@ -68,6 +70,7 @@ describe("CommentUseCase", () => {
       };
 
       /** creating dependency of use case */
+      const mockThreadRepository = new ThreadRepository();
       const mockCommentRepository = new CommentRepository();
 
       /** mocking needed function */
@@ -82,19 +85,19 @@ describe("CommentUseCase", () => {
         .mockImplementation((comment) => Promise.resolve(comment));
 
       /** creating use case instance */
-      const deleteCommentUseCase = new CommentUseCase({
+      const commentUseCase = new CommentUseCase({
+        threadRepository: mockThreadRepository,
         commentRepository: mockCommentRepository,
       });
 
       // Action
-      const deleteComment = await deleteCommentUseCase.executeDeleteComment(
+      const deleteComment = await commentUseCase.executeDeleteComment(
         useCasePayload
       );
 
       // Assert
       expect(mockCommentRepository.verifyCommentById).toBeCalledWith(
-        useCasePayload.commentId,
-        "comments"
+        useCasePayload.commentId
       );
       expect(mockCommentRepository.verifyCommentOwner).toBeCalledWith(
         useCasePayload.userId,
@@ -104,6 +107,7 @@ describe("CommentUseCase", () => {
         useCasePayload
       );
       expect(deleteComment).not.toEqual(undefined); // receive return query result
+      expect(deleteComment).toEqual(useCasePayload); // return the same data as the input
     });
   });
 });
