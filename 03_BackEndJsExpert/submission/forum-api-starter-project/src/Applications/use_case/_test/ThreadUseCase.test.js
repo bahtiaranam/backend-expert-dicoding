@@ -166,6 +166,11 @@ describe("ThreadUseCase", () => {
     const useCasePayload = {
       threadId: "thread-123",
     };
+    const deletePayload = {
+      threadId: "thread-123",
+      commentId: "comment-123",
+      userId: "user-123",
+    };
 
     /** mocking needed function */
     mockThreadRepository.addThread = jest.fn().mockImplementation((thread) =>
@@ -205,7 +210,7 @@ describe("ThreadUseCase", () => {
       .mockImplementation(() => Promise.resolve());
     mockCommentRepository.deleteCommentById = jest
       .fn()
-      .mockImplementation((comment) => Promise.resolve(comment));
+      .mockImplementation(() => Promise.resolve("success"));
     mockCommentRepository.getThreadComments = jest.fn().mockImplementation(() =>
       Promise.resolve([
         {
@@ -230,11 +235,7 @@ describe("ThreadUseCase", () => {
 
     await threadUseCase.executeAddThread(addThreadPayload);
     await commentUseCase.executeAddComment(addCommentPayload);
-    await commentUseCase.executeDeleteComment({
-      threadId: "thread-123",
-      commentId: "comment-123",
-      userId: "user-123",
-    });
+    await commentUseCase.executeDeleteComment(deletePayload);
     const getThreadDetail = await threadUseCase.executeGetThreadDetail(
       useCasePayload
     );
@@ -242,9 +243,16 @@ describe("ThreadUseCase", () => {
     // Assert
     expect(mockThreadRepository.addThread).toBeCalledWith(addThreadPayload);
     expect(mockCommentRepository.addComment).toBeCalledWith(addCommentPayload);
-    expect(mockCommentRepository.verifyCommentById).toBeCalled();
-    expect(mockCommentRepository.verifyCommentOwner).toBeCalled();
-    expect(mockCommentRepository.deleteCommentById).toBeCalled();
+    expect(mockCommentRepository.verifyCommentById).toBeCalledWith(
+      "comment-123"
+    );
+    expect(mockCommentRepository.verifyCommentOwner).toBeCalledWith(
+      "user-123",
+      "comment-123"
+    );
+    expect(mockCommentRepository.deleteCommentById).toBeCalledWith(
+      deletePayload
+    );
     expect(mockThreadRepository.getThreadDetail).toBeCalledWith(useCasePayload);
     expect(mockCommentRepository.getThreadComments).toBeCalledWith(
       useCasePayload

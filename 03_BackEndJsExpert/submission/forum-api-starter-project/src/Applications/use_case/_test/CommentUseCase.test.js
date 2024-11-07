@@ -82,7 +82,7 @@ describe("CommentUseCase", () => {
         .mockImplementation(() => Promise.resolve());
       mockCommentRepository.deleteCommentById = jest
         .fn()
-        .mockImplementation((comment) => Promise.resolve(comment));
+        .mockImplementation(() => Promise.resolve("success"));
 
       /** creating use case instance */
       const commentUseCase = new CommentUseCase({
@@ -106,8 +106,7 @@ describe("CommentUseCase", () => {
       expect(mockCommentRepository.deleteCommentById).toBeCalledWith(
         useCasePayload
       );
-      expect(deleteComment).not.toEqual(undefined); // receive return query result
-      expect(deleteComment).toEqual(useCasePayload); // return the same data as the input
+      expect(deleteComment).toEqual("success");
     });
   });
 });

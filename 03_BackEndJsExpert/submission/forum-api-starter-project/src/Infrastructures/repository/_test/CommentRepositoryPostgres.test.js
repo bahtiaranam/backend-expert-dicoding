@@ -60,7 +60,7 @@ describe("CommentRepositoryPostgres", () => {
         commentRepositoryPostgresNotFound.verifyCommentById("comment-23212")
       ).rejects.toThrowError(new NotFoundError("data tidak ditemukan"));
     });
-    it("should return true when comment found", async () => {
+    it("should not return error notfound when comment exist", async () => {
       // Arrange
       await ThreadsTableTestHelper.addThread({
         id: "thread-12345",
@@ -74,7 +74,7 @@ describe("CommentRepositoryPostgres", () => {
       // Action & Assert
       await expect(
         commentRepositoryPostgres.verifyCommentById("comment-12345")
-      ).resolves.not.toThrowError();
+      ).resolves.not.toThrowError(new NotFoundError(`data tidak ditemukan`));
     });
   });
 
@@ -101,7 +101,7 @@ describe("CommentRepositoryPostgres", () => {
       );
     });
 
-    it("should return nothing when userId and owner match", async () => {
+    it("should not return error when userId and owner match", async () => {
       // Arrange
       await ThreadsTableTestHelper.addThread({
         id: "thread-12345",
@@ -111,14 +111,17 @@ describe("CommentRepositoryPostgres", () => {
         id: "comment-12345",
         ...postingComment,
       });
-      // Action
-      const verifyOwner = await commentRepositoryPostgres.verifyCommentOwner(
-        "user-123",
-        "comment-12345"
+      // Action & Assert
+      await expect(
+        commentRepositoryPostgres.verifyCommentOwner(
+          "user-123",
+          "comment-12345"
+        )
+      ).resolves.not.toThrowError(
+        new AuthorizationError(
+          "Anda tidak memiliki hak akses untuk menghapus komentar ini"
+        )
       );
-
-      // Assert
-      expect(verifyOwner).toEqual(undefined); // undefined because no error thrown
     });
   });
 
@@ -135,8 +138,7 @@ describe("CommentRepositoryPostgres", () => {
         postingComment
       );
       const verifyComment = await CommentsTableTestHelper.verifyCommentById(
-        addedComment.id,
-        "comments"
+        "comment-12345"
       );
 
       // Assert
@@ -156,12 +158,6 @@ describe("CommentRepositoryPostgres", () => {
   describe("getThreadComments function", () => {
     it("should persist get thread comments correctly", async () => {
       // Arrange
-      const commentRepositoryPostgres = new CommentRepositoryPostgres(
-        pool,
-        fakeIdGenerator
-      );
-
-      // Action
       await ThreadsTableTestHelper.addThread({
         id: "thread-12345",
         ...postingThread,
@@ -170,6 +166,8 @@ describe("CommentRepositoryPostgres", () => {
         id: "comment-12345",
         ...postingComment,
       });
+
+      // Action
       const getThreadComment =
         await commentRepositoryPostgres.getThreadComments({
           threadId: "thread-12345",
@@ -215,7 +213,7 @@ describe("CommentRepositoryPostgres", () => {
       );
 
       // Assert
-      expect(deleteThreadComment.rowCount).toEqual(1);
+      expect(deleteThreadComment).toBe("success");
       expect(comments[0].id).toEqual("comment-12345");
       expect(comments[0].thread_id).toEqual("thread-12345");
       expect(comments[0].is_deleted).toEqual(true);

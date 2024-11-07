@@ -73,7 +73,8 @@ class CommentRepositoryPostgres extends CommentRepository {
       values: [commentId, threadId],
     };
 
-    return await this._pool.query(query);
+    await this._pool.query(query);
+    return "success";
   }
 }
 

@@ -52,7 +52,7 @@ describe("ThreadRepositoryPostgres", () => {
       // Action & Assert
       await expect(
         threadRepositoryPostgres.verifyThreadById("thread-123")
-      ).resolves.not.toThrowError();
+      ).resolves.not.toThrowError(new NotFoundError("data tidak ditemukan"));
     });
   });
 
@@ -68,6 +68,9 @@ describe("ThreadRepositoryPostgres", () => {
       const addedThread = await threadRepositoryPostgres.addThread(
         postingThread
       );
+      const threadExist = await ThreadsTableTestHelper.verifyThreadById(
+        "thread-12345"
+      );
 
       // Assert
       expect(addedThread).toStrictEqual({
@@ -75,6 +78,12 @@ describe("ThreadRepositoryPostgres", () => {
         title: postingThread.title,
         owner: postingThread.owner,
       });
+      expect(threadExist).toHaveLength(1);
+      expect(threadExist[0].id).toEqual("thread-12345");
+      expect(threadExist[0].title).toEqual(postingThread.title);
+      expect(threadExist[0].body).toEqual(postingThread.body);
+      expect(threadExist[0].username).toEqual(postingThread.username);
+      expect(threadExist[0].owner).toEqual(postingThread.owner);
     });
   });
 
@@ -85,13 +94,12 @@ describe("ThreadRepositoryPostgres", () => {
         pool,
         fakeIdGenerator
       );
-
-      // Action
       await ThreadsTableTestHelper.addThread({
         id: "thread-12345",
         ...postingThread,
       });
 
+      // Action
       const getThread = await threadRepositoryPostgres.getThreadDetail({
         threadId: "thread-12345",
       });

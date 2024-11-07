@@ -38,24 +38,13 @@ const CommentsTableTestHelper = {
   },
 
   async deleteCommentById({ threadId, commentId, userId }) {
-    const verifyOwner = {
-      text: "SELECT owner FROM comments WHERE id = $1",
-      values: [commentId],
-    };
-
-    const resultOwner = await pool.query(verifyOwner);
-    if (resultOwner.rows[0].owner !== userId) {
-      throw new AuthorizationError(
-        "Anda tidak memiliki hak akses untuk menghapus komentar ini"
-      );
-    }
-
     const query = {
-      text: "UPDATE comments SET is_deleted = true, content = '**komentar telah dihapus**' WHERE id = $1 AND thread_id = $2",
+      text: "UPDATE comments SET is_deleted = true WHERE id = $1 AND thread_id = $2",
       values: [commentId, threadId],
     };
 
-    return await pool.query(query);
+    await pool.query(query);
+    return true;
   },
 
   async cleanTable() {
